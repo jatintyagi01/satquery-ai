@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Trash2, Download, Eye, Sparkles, Loader2, Filter, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Trash2, Download, Eye, Sparkles, Loader2, Filter, ChevronRight, Compass, ArrowRight } from "lucide-react";
 import { Badge, PrimaryButton, Card3D } from "../components/ui/primitives";
 import ResultsPanel from "../components/ResultsPanel";
 import { api } from "../services/api";
 import { taskLabel } from "../utils/format";
-import type { AnalyzeResponse, HistoryItem } from "../types";
+import type { AnalyzeResponse, HistoryItem, MissionSummaryItem } from "../types";
 
 /* ── palette ────────────────────────────────────────────── */
 const C = {
@@ -84,7 +85,10 @@ function TraceHeader({ item }: { item: HistoryItem }) {
 
 /* ── Main page ──────────────────────────────────────────── */
 export default function HistoryPage() {
+  const navigate = useNavigate();
+  const [tab,          setTab]          = useState<"analyses" | "missions">("analyses");
   const [items,        setItems]        = useState<HistoryItem[]>([]);
+  const [missions,     setMissions]     = useState<MissionSummaryItem[]>([]);
   const [selected,     setSelected]     = useState<AnalyzeResponse | null>(null);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [loading,      setLoading]      = useState(true);
@@ -95,7 +99,13 @@ export default function HistoryPage() {
 
   const load = () => {
     setLoading(true);
-    api.getHistory(100).then(setItems).finally(() => setLoading(false));
+    Promise.all([
+      api.getHistory(100).catch(() => []),
+      api.getMissions(100).catch(() => []),
+    ]).then(([hist, msn]) => {
+      setItems(hist);
+      setMissions(msn);
+    }).finally(() => setLoading(false));
   };
   useEffect(load, []);
 
@@ -110,6 +120,12 @@ export default function HistoryPage() {
     await api.deleteHistoryItem(id);
     load();
     if (selected?.analysis_id === id) { setSelected(null); setSelectedItem(null); }
+  };
+
+  const deleteMission = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await api.deleteMission(id);
+    load();
   };
 
   const handleSummarize = async () => {
@@ -128,6 +144,10 @@ export default function HistoryPage() {
     ? items.filter((i) => i.query.toLowerCase().includes(filter.toLowerCase()))
     : items;
 
+  const filteredMissions = filter
+    ? missions.filter((m) => m.objective.toLowerCase().includes(filter.toLowerCase()) || m.mission_title.toLowerCase().includes(filter.toLowerCase()))
+    : missions;
+
   return (
     <div className="px-6 py-6 max-w-[1280px] mx-auto">
 
@@ -139,7 +159,7 @@ export default function HistoryPage() {
           </div>
           <h1 className="text-[30px] font-black mb-1 pop-heading" style={{ color: C.text }}>History</h1>
           <p className="text-[12px]" style={{ color: C.third }}>
-            All past analyses are persisted locally, cryptographic-signed, and fully auditable.
+            All past analyses and autonomous missions are persisted locally, cryptographic-signed, and fully auditable.
           </p>
         </div>
         <div className="flex items-center gap-5 text-[10px] font-mono">
@@ -156,107 +176,216 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* ── Summarize panel ───────────────────────────────── */}
-      <Card3D className="!p-4 mb-5">
-        <div className="flex items-center gap-3">
-          <Sparkles size={13} style={{ color: C.primary }} />
-          <span className="text-[12px]" style={{ color: C.second }}>Summarize my last</span>
-          <input
-            type="number" min={1} max={50} value={summaryCount}
-            onChange={(e) => setSummaryCount(Math.max(1, Number(e.target.value) || 1))}
-            className="w-14 rounded-md px-2 py-1 text-sm text-center border outline-none font-mono"
-            style={{ background: C.bg, color: C.text, borderColor: C.border }}
-          />
-          <span className="text-[12px]" style={{ color: C.second }}>agentic geospatial analyses</span>
-          <span className="text-[10px] font-mono italic" style={{ color: C.hover }}>
-            (geospatial-temporal shifts, 668 variance + KIM outputs)
-          </span>
-          <PrimaryButton onClick={handleSummarize} disabled={summarizing} className="ml-auto">
-            {summarizing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-            {summarizing ? "Synthesizing…" : "Generate Summary"}
-          </PrimaryButton>
-        </div>
-        {summary && (
-          <p className="text-[12px] leading-relaxed mt-4 pt-4 border-t" style={{ color: C.text, borderColor: C.border }}>
-            {summary}
-          </p>
-        )}
-      </Card3D>
+      {/* ── Tab Switcher ──────────────────────────────────── */}
+      <div className="flex items-center gap-2 mb-5 border-b pb-3" style={{ borderColor: C.border }}>
+        <button
+          onClick={() => setTab("analyses")}
+          className={`text-[12px] font-mono px-4 py-2 rounded-[4px] transition-all flex items-center gap-2 ${
+            tab === "analyses"
+              ? "font-bold text-[#1A1410] shadow-sm"
+              : "text-[#CCBEB1] hover:text-white border"
+          }`}
+          style={{
+            background: tab === "analyses" ? C.primary : "transparent",
+            borderColor: tab === "analyses" ? C.primary : C.border,
+          }}
+        >
+          <span>⚡</span> Standard Analyses ({items.length})
+        </button>
+        <button
+          onClick={() => setTab("missions")}
+          className={`text-[12px] font-mono px-4 py-2 rounded-[4px] transition-all flex items-center gap-2 ${
+            tab === "missions"
+              ? "font-bold text-[#1A1410] shadow-sm"
+              : "text-[#CCBEB1] hover:text-white border"
+          }`}
+          style={{
+            background: tab === "missions" ? C.primary : "transparent",
+            borderColor: tab === "missions" ? C.primary : C.border,
+          }}
+        >
+          <Compass size={14} /> 🛰️ Mission Investigations ({missions.length})
+        </button>
+      </div>
 
-      {/* ── Two-column ────────────────────────────────────── */}
-      <div className="grid grid-cols-[1fr_1.3fr] gap-5 items-start">
+      {/* ── Summarize panel (for analyses tab) ────────────────── */}
+      {tab === "analyses" && (
+        <Card3D className="!p-4 mb-5">
+          <div className="flex items-center gap-3">
+            <Sparkles size={13} style={{ color: C.primary }} />
+            <span className="text-[12px]" style={{ color: C.second }}>Summarize my last</span>
+            <input
+              type="number" min={1} max={50} value={summaryCount}
+              onChange={(e) => setSummaryCount(Math.max(1, Number(e.target.value) || 1))}
+              className="w-14 rounded-md px-2 py-1 text-sm text-center border outline-none font-mono"
+              style={{ background: C.bg, color: C.text, borderColor: C.border }}
+            />
+            <span className="text-[12px]" style={{ color: C.second }}>agentic geospatial analyses</span>
+            <span className="text-[10px] font-mono italic" style={{ color: C.hover }}>
+              (geospatial-temporal shifts, variance + KIM outputs)
+            </span>
+            <PrimaryButton onClick={handleSummarize} disabled={summarizing} className="ml-auto">
+              {summarizing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              {summarizing ? "Synthesizing…" : "Generate Summary"}
+            </PrimaryButton>
+          </div>
+          {summary && (
+            <p className="text-[12px] leading-relaxed mt-4 pt-4 border-t" style={{ color: C.text, borderColor: C.border }}>
+              {summary}
+            </p>
+          )}
+        </Card3D>
+      )}
 
-        {/* Left: list */}
-        <Card3D className="!p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[16px] font-black pop-heading-sm" style={{ color: C.text }}>
-              Analyses ({items.length})
-            </h2>
-            <div className="relative">
-              <Filter size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2"
-                      style={{ color: C.second }} />
-              <input
-                placeholder="Filter scenes…"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="pl-7 pr-3 py-1.5 text-[13px] rounded border outline-none font-mono"
-                style={{
-                  background: C.bg, color: C.text,
-                  borderColor: C.border, width: 160,
-                }}
-              />
+      {/* ── Tab Content ───────────────────────────────────── */}
+      {tab === "missions" ? (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-[13px] font-mono text-[#997E67]">
+              Stored Earth-Observation Autonomous Investigations
             </div>
+            <PrimaryButton onClick={() => navigate("/missions")}>
+              <Compass size={14} /> 🛰️ Start New Mission
+            </PrimaryButton>
           </div>
 
           {loading ? (
-            <div className="text-[12px] font-mono py-4" style={{ color: C.third }}>Loading…</div>
-          ) : filtered.length === 0 ? (
-            <div className="text-[12px] font-mono py-4" style={{ color: C.third }}>No history yet.</div>
+            <div className="text-[12px] font-mono py-8 text-center text-[#997E67]">Loading missions…</div>
+          ) : filteredMissions.length === 0 ? (
+            <Card3D className="!p-8 text-center space-y-3">
+              <Compass size={28} className="mx-auto text-[#997E67]" />
+              <div className="text-[15px] font-bold text-[#F0E4D8]">No Mission Investigations Yet</div>
+              <p className="text-[12px] font-mono text-[#997E67] max-w-md mx-auto">
+                Turn a high-level Earth-observation objective into an autonomous investigation in Mission Mode.
+              </p>
+              <PrimaryButton onClick={() => navigate("/missions")} className="mx-auto">
+                Launch First Mission
+              </PrimaryButton>
+            </Card3D>
           ) : (
-            <div className="space-y-1.5 max-h-[65vh] overflow-y-auto pr-1">
-              {filtered.map((it) => {
-                const active = selectedItem?.analysis_id === it.analysis_id;
-                return (
-                  <button
-                    key={it.analysis_id}
-                    onClick={() => openItem(it)}
-                    className="w-full text-left rounded-[4px] border p-3 transition-all"
-                    style={{
-                      borderColor: active ? `${C.primary}30` : C.border,
-                      background:  active ? `${C.primary}04` : "transparent",
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-[14px] font-medium truncate mb-1.5" style={{ color: C.text }}>{it.query}</div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge tone="cyan">{taskLabel(it.task)}</Badge>
-                          <Badge tone="blue">SENTINEL-4L</Badge>
-                          <span className="text-[11px] font-mono" style={{ color: C.second }}>
-                            {new Date(it.timestamp).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono text-[13px] font-bold" style={{ color: C.primary }}>
-                          {it.confidence != null ? `${Math.round(it.confidence * 100)}%` : "n/a"}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {filteredMissions.map((msn) => (
+                <div
+                  key={msn.mission_id}
+                  className="p-4 rounded-[6px] border bg-[#160F0B] hover:border-accent-primary/50 transition-all flex flex-col justify-between space-y-3 group"
+                  style={{ borderColor: C.border }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent-primary/10 text-accent-primary border border-accent-primary/30 font-bold">
+                          🛰️ {msn.mission_id.toUpperCase()}
                         </span>
-                        <button
-                          onClick={(e) => deleteItem(it.analysis_id, e)}
-                          className="transition-colors"
-                          style={{ color: C.hover }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.neg; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.hover; }}
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                        <span className="text-[11px] font-mono text-[#8FAF8A] uppercase font-bold">
+                          ✓ {msn.status}
+                        </span>
+                      </div>
+                      <div className="text-[14px] font-mono font-bold text-[#F0E4D8] truncate group-hover:text-accent-primary transition-colors">
+                        "{msn.objective}"
+                      </div>
+                      <div className="text-[11px] font-mono text-[#997E67]">
+                        Type: {msn.mission_title} &bull; Changed Area: {msn.changed_area_km2.toFixed(2)} km²
                       </div>
                     </div>
-                  </button>
-                );
-              })}
+
+                    <button
+                      onClick={(e) => deleteMission(msn.mission_id, e)}
+                      className="text-[#44342A] hover:text-accent-negative transition-colors p-1"
+                      title="Delete Mission"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-[#2E2018] text-[11px] font-mono">
+                    <span className="text-[#997E67]">
+                      {new Date(msn.created_at).toLocaleDateString()}
+                    </span>
+                    <button
+                      onClick={() => navigate(`/missions?id=${msn.mission_id}`)}
+                      className="flex items-center gap-1 text-accent-primary font-bold hover:underline"
+                    >
+                      View Mission <ArrowRight size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+        </div>
+      ) : (
+        /* ── Two-column for Standard Analyses ────────────────── */
+        <div className="grid grid-cols-[1fr_1.3fr] gap-5 items-start">
+
+          {/* Left: list */}
+          <Card3D className="!p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[16px] font-black pop-heading-sm" style={{ color: C.text }}>
+                Analyses ({items.length})
+              </h2>
+              <div className="relative">
+                <Filter size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2"
+                        style={{ color: C.second }} />
+                <input
+                  placeholder="Filter scenes…"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="pl-7 pr-3 py-1.5 text-[13px] rounded border outline-none font-mono"
+                  style={{
+                    background: C.bg, color: C.text,
+                    borderColor: C.border, width: 160,
+                  }}
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-[12px] font-mono py-4" style={{ color: C.third }}>Loading…</div>
+            ) : filtered.length === 0 ? (
+              <div className="text-[12px] font-mono py-4" style={{ color: C.third }}>No history yet.</div>
+            ) : (
+              <div className="space-y-1.5 max-h-[65vh] overflow-y-auto pr-1">
+                {filtered.map((it) => {
+                  const active = selectedItem?.analysis_id === it.analysis_id;
+                  return (
+                    <button
+                      key={it.analysis_id}
+                      onClick={() => openItem(it)}
+                      className="w-full text-left rounded-[4px] border p-3 transition-all"
+                      style={{
+                        borderColor: active ? `${C.primary}30` : C.border,
+                        background:  active ? `${C.primary}04` : "transparent",
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-[14px] font-medium truncate mb-1.5" style={{ color: C.text }}>{it.query}</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge tone="cyan">{taskLabel(it.task)}</Badge>
+                            <Badge tone="blue">SENTINEL-4L</Badge>
+                            <span className="text-[11px] font-mono" style={{ color: C.second }}>
+                              {new Date(it.timestamp).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={(e) => deleteItem(it.analysis_id, e)}
+                            className="transition-colors"
+                            style={{ color: C.hover }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.neg; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.hover; }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
 
           {items.length > 0 && (
             <div className="mt-3 pt-3 border-t" style={{ borderColor: C.border }}>
@@ -366,6 +495,8 @@ export default function HistoryPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
+

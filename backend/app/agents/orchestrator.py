@@ -281,6 +281,7 @@ class Orchestrator:
             chain_steps=[],
             retries=retries,
             followup_context_used=followup_used,
+            advanced_change_analysis=result.get("advanced_change_analysis"),
         )
 
         if session_id:
@@ -428,10 +429,13 @@ class Orchestrator:
 
         if task in ("change_detection", "change_description", "change_vqa"):
             a, b = images[0]["array"], images[1]["array"]
-            res = detect_change(a, b, sensitivity=change_sensitivity)
+            meta_a = images[0].get("meta", {})
+            meta_b = images[1].get("meta", {})
+            res = detect_change(a, b, sensitivity=change_sensitivity, meta_t1=meta_a, meta_t2=meta_b)
             effective_query = query if task == "change_vqa" else (
                 query if task == "change_description" else "what changed")
             answer, model_conf, evidence, delta_signals = change_vqa_answer(effective_query, res)
+            adv_analysis = res.get("advanced_change_analysis")
             return {
                 "answer": answer,
                 "evidence": evidence,
@@ -446,8 +450,10 @@ class Orchestrator:
                 "exec_summary": f"Change detected across {res['change_pct']:.1f}% of scene "
                                 f"({len(res['change_regions'])} regions)",
                 "kb_signals": delta_signals,
+                "advanced_change_analysis": adv_analysis,
                 "artifact": {"type": "change", "regions": res["change_regions"],
-                              "shape": list(res["change_mask"].shape[:2])},
+                              "shape": list(res["change_mask"].shape[:2]),
+                              "advanced_change_analysis": adv_analysis},
             }
 
         if task == "optical_sar_fusion":
@@ -528,13 +534,32 @@ def region_followup(analysis_id: str, x: int, y: int, query: Optional[str] = Non
         )
 
     if art["type"] == "change":
-        for r in art["regions"]:
+        adv = art.get("advanced_change_analysis") or {}
+        adv_regions = adv.get("regions", [])
+        for idx, r in enumerate(art["regions"]):
             if r["x"] <= x <= r["x"] + r["w"] and r["y"] <= y <= r["y"] + r["h"]:
+                # Match corresponding region metrics
+                matched_reg_data = None
+                for reg in adv_regions:
+                    if reg.get("region_index") == idx + 1:
+                        matched_reg_data = reg
+                        break
+
+                reg_conf_str = "High Confidence" if r["confidence"] >= 0.75 else "Moderate Confidence" if r["confidence"] >= 0.5 else "Low Confidence"
+                summary_text = (
+                    f"Region {idx + 1} ({reg_conf_str}): covers {r['area_pct']:.1f}% of the scene "
+                    f"with {r['confidence']*100:.0f}% regional confidence."
+                )
+                if matched_reg_data:
+                    b_card = matched_reg_data["cards"]["built_up"]
+                    v_card = matched_reg_data["cards"]["vegetation"]
+                    summary_text += f" Built-up shifted ({b_card['label']}), Vegetation shifted ({v_card['label']}). Spectral distance: {matched_reg_data['spectral_distance']:.2f} RMS."
+
                 return RegionFollowupResponse(
                     analysis_id=analysis_id, x=x, y=y, in_region=True,
-                    summary=f"This point falls inside a detected change region covering {r['area_pct']:.1f}% "
-                            f"of the scene, with {r['confidence']*100:.0f}% regional confidence.",
-                    local_stats={"area_pct": r["area_pct"], "confidence": r["confidence"]},
+                    summary=summary_text,
+                    local_stats={"area_pct": r["area_pct"], "confidence": r["confidence"], "region_index": idx + 1},
+                    region_spectral_data=matched_reg_data,
                 )
         return RegionFollowupResponse(
             analysis_id=analysis_id, x=x, y=y, in_region=False,

@@ -23,4 +23,3 @@ models/checkpoints/*
 .env
 *.log
 .DS_Store
-frontend/tsconfig.tsbuildinfo

@@ -23,9 +23,9 @@ export function useCardBounds(ref: RefObject<HTMLElement | null>) {
   }, [ref]);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const handleResize = () => {
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(updateBounds, 150);
     };
 

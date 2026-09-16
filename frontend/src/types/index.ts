@@ -70,6 +70,73 @@ export interface AnalyzeResponse {
   chain_steps: ChainStep[];
   retries: RetryAttempt[];
   followup_context_used: boolean;
+  advanced_change_analysis?: AdvancedChangeAnalysis;
+}
+
+export interface MetricCardInfo {
+  title: string;
+  value: string;
+  label: string;
+  delta_pct?: number;
+  t1_val?: string;
+  t2_val?: string;
+  color?: string;
+  available?: boolean;
+  note?: string;
+  ndvi_available?: boolean;
+  ndvi_note?: string;
+}
+
+export interface SpectralBandItem {
+  band: string;
+  wavelength?: string;
+  T1_Before: number;
+  T2_After: number;
+  delta: string;
+  available?: boolean;
+}
+
+export interface BiophysicalRadarItem {
+  metric: string;
+  Before: number;
+  After: number;
+  available?: boolean;
+  is_ndvi?: boolean;
+}
+
+export interface RegionSpectralData {
+  region_index: number;
+  region_id: string;
+  bbox: [number, number, number, number];
+  area_pct: number;
+  confidence: number;
+  cards: {
+    built_up: MetricCardInfo;
+    vegetation: MetricCardInfo;
+    sar: MetricCardInfo;
+    spectral_distance: MetricCardInfo;
+  };
+  spectral_bands: SpectralBandItem[];
+  biophysical_radar: BiophysicalRadarItem[];
+  spectral_distance: number;
+  ai_interpretation: string;
+}
+
+export interface AdvancedChangeAnalysis {
+  title: string;
+  subtitle: string;
+  global_cards: {
+    built_up: MetricCardInfo;
+    vegetation: MetricCardInfo;
+    sar: MetricCardInfo;
+    spectral_distance: MetricCardInfo;
+  };
+  spectral_bands: SpectralBandItem[];
+  biophysical_radar: BiophysicalRadarItem[];
+  spectral_distance: number;
+  ai_interpretation: string;
+  sensor_status?: Record<string, string>;
+  regions: RegionSpectralData[];
 }
 
 export interface RegionFollowupResponse {
@@ -79,6 +146,7 @@ export interface RegionFollowupResponse {
   in_region: boolean;
   summary: string;
   local_stats: Record<string, number>;
+  region_spectral_data?: RegionSpectralData;
 }
 
 export interface HistoryItem {
@@ -104,3 +172,86 @@ export interface ModelCard {
 }
 
 export type AnalysisMode = "single" | "optical_sar" | "before_after";
+
+export interface MissionTask {
+  task_id: string;
+  title: string;
+  description: string;
+  category: "planning" | "baseline" | "temporal" | "sar" | "impact" | "synthesis";
+  status: "pending" | "running" | "completed" | "needs_input" | "failed";
+  started_at?: string | null;
+  completed_at?: string | null;
+  output_summary?: string | null;
+  error_message?: string | null;
+}
+
+export interface MissionEvidenceCard {
+  title: string;
+  category: string;
+  description: string;
+  modality: "optical" | "sar" | "temporal" | "domain";
+  status: "verified" | "unavailable" | "inferred";
+}
+
+export interface MissionAffectedRegion {
+  region_id: string;
+  bbox: [number, number, number, number];
+  area_km2: number;
+  area_pct: number;
+  change_type: string;
+  land_type: string;
+  temporal_status: string;
+  evidence_summary: string;
+}
+
+export interface MissionStatistics {
+  total_scene_area_km2: number;
+  changed_area_km2: number;
+  changed_area_pct: number;
+  agricultural_affected_km2: number;
+  agricultural_affected_pct: number;
+  water_expansion_km2: number;
+  built_up_expansion_km2: number;
+  vegetation_loss_km2: number;
+}
+
+export interface MissionPlanResponse {
+  objective: string;
+  mission_type: string;
+  mission_title: string;
+  required_inputs_description: string;
+  needs_additional_imagery: boolean;
+  missing_input_warning?: string | null;
+  tasks: MissionTask[];
+}
+
+export interface Mission {
+  mission_id: string;
+  objective: string;
+  mission_type: string;
+  mission_title: string;
+  status: "running" | "completed" | "failed" | "needs_input";
+  created_at: string;
+  completed_at?: string | null;
+  image_ids: string[];
+  tasks: MissionTask[];
+  visual_outputs: Record<string, string>;
+  primary_finding: string;
+  executive_summary: string;
+  key_findings: string[];
+  evidence_cards: MissionEvidenceCard[];
+  affected_regions: MissionAffectedRegion[];
+  statistics: MissionStatistics;
+  missing_input_warning?: string | null;
+  limitations: string[];
+}
+
+export interface MissionSummaryItem {
+  mission_id: string;
+  mission_title: string;
+  objective: string;
+  mission_type: string;
+  status: string;
+  created_at: string;
+  changed_area_km2: number;
+}

@@ -100,4 +100,45 @@ export const api = {
     if (!res.ok) throw new Error("Failed to generate report");
     return res.blob();
   },
+
+  // ── Mission Mode APIs ──────────────────────────────────────────
+  async planMission(payload: { objective: string; image_ids: string[] }): Promise<import("../types").MissionPlanResponse> {
+    const res = await fetch(`${BASE}/missions/plan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handle(res);
+  },
+
+  async runMission(payload: { objective: string; image_ids: string[]; session_id?: string }): Promise<import("../types").Mission> {
+    const res = await fetch(`${BASE}/missions/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return handle(res);
+  },
+
+  async getMissions(limit = 50): Promise<import("../types").MissionSummaryItem[]> {
+    const res = await fetch(`${BASE}/missions?limit=${limit}`);
+    return handle(res);
+  },
+
+  async getMission(missionId: string): Promise<import("../types").Mission> {
+    const res = await fetch(`${BASE}/missions/${missionId}`);
+    return handle(res);
+  },
+
+  async deleteMission(missionId: string): Promise<void> {
+    const res = await fetch(`${BASE}/missions/${missionId}`, { method: "DELETE" });
+    await handle(res);
+  },
+
+  async downloadMissionReport(missionId: string): Promise<Blob> {
+    const res = await fetch(`${BASE}/missions/${missionId}/report`, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to generate mission report");
+    return res.blob();
+  },
 };
+

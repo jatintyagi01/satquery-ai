@@ -58,6 +58,7 @@ class RegionFollowupResponse(BaseModel):
     in_region: bool
     summary: str
     local_stats: Dict[str, float] = Field(default_factory=dict)
+    region_spectral_data: Optional[Dict[str, Any]] = None
 
 
 class SummarizeRequest(BaseModel):
@@ -113,6 +114,7 @@ class AnalyzeResponse(BaseModel):
     chain_steps: List[ChainStep] = Field(default_factory=list)
     retries: List[RetryAttempt] = Field(default_factory=list)
     followup_context_used: bool = False
+    advanced_change_analysis: Optional[Dict[str, Any]] = None
 
 
 class HistoryItem(BaseModel):
