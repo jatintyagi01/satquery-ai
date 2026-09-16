@@ -235,21 +235,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-3">
-                    {/* mini confidence bar */}
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex gap-[2px]">
-                        {Array.from({ length: 5 }).map((_, i) => {
-                          const filled = i < Math.round((r.confidence ?? 0) * 5);
-                          return (
-                            <div key={i} className="w-3 h-1.5 rounded-[1px]"
-                                 style={{ background: filled ? C.primary : C.border }} />
-                          );
-                        })}
-                      </div>
-                      <span className="font-mono text-[11px]" style={{ color: C.primary }}>
-                        {r.confidence != null ? `${Math.round(r.confidence * 100)}%` : "n/a"}
-                      </span>
-                    </div>
                     <span className="text-[10px] font-mono border px-2 py-0.5 rounded transition-colors"
                           style={{ borderColor: C.border, color: C.third }}>
                       Inspect

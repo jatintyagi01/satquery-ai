@@ -8,7 +8,7 @@ const HOW_IT_WORKS = [
   { label: "Plan", desc: "Task classified and specialist model selected from the registry." },
   { label: "Analyze", desc: "Selected model executes on the imagery." },
   { label: "Validate", desc: "Outputs and evidence signals are validated." },
-  { label: "Explain", desc: "Evidence-grounded answer with confidence and trace returned." },
+  { label: "Explain", desc: "Evidence-grounded answer with verified evidence and trace returned." },
 ];
 
 const TASKS = [
@@ -54,7 +54,7 @@ function PipelineDiagram() {
       ))}
       <div className="rounded-[5px] px-4 py-2 text-[13px] text-center border"
            style={{ borderColor: 'rgba(143,175,138,0.25)', background: 'rgba(143,175,138,0.05)', color: '#8FAF8A' }}>
-        Answer + evidence + confidence + trace
+        Answer + evidence + analysis + trace
       </div>
     </div>
   );
@@ -80,7 +80,7 @@ export default function LandingPage() {
           <p className="mt-6 max-w-2xl text-[16px] leading-relaxed" style={{ color: '#997E67' }}>
             SatQuery reads a natural-language question and a piece of satellite imagery, decides which
             specialist workflow applies — VQA, grounding, change detection, optical-SAR fusion — and
-            answers with confidence, cited evidence, and a full execution trace.
+            answers with cited evidence and a full execution trace.
           </p>
           <div className="flex items-center gap-3 mt-8">
             <PrimaryButton onClick={() => navigate("/analyze")}>Start an analysis <ArrowRight size={15} /></PrimaryButton>

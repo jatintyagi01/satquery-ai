@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Cpu, Database, Sliders, Info } from "lucide-react";
+import { Cpu, Database, Info } from "lucide-react";
 import { Card, PanelTitle, Badge } from "../components/ui/primitives";
 
 export default function SettingsPage() {
-  const [threshold, setThreshold] = useState(0.5);
   const [mode, setMode] = useState<"cpu" | "gpu">("cpu");
 
   return (
@@ -37,16 +36,6 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <PanelTitle>Confidence threshold</PanelTitle>
-        <input
-          type="range" min={0} max={1} step={0.05} value={threshold}
-          onChange={(e) => setThreshold(Number(e.target.value))}
-          className="w-full accent-accent-cyan"
-        />
-        <div className="text-[12px] text-slate-400 mt-1">Default confidence threshold: {threshold.toFixed(2)}</div>
-      </Card>
-
-      <Card>
         <PanelTitle>Storage</PanelTitle>
         <div className="flex items-center gap-2 text-sm mb-1"><Database size={15} className="text-accent-cyan" /> SQLite (local)</div>
         <div className="text-[12px] text-slate-500">Uploaded imagery, previews, and history are stored locally under <code className="data">backend/uploads</code> and <code className="data">backend/satquery.db</code>.</div>
@@ -66,7 +55,7 @@ export default function SettingsPage() {
           SatQuery AI is an agentic vision-language assistant for multimodal remote-sensing image analysis,
           built for the Smart India Hackathon. It routes natural-language queries across single-image,
           cross-modal (optical+SAR), and bi-temporal imagery to the appropriate specialist workflow, returning
-          evidence-grounded answers, confidence scores, and full execution traces.
+          evidence-grounded answers, cited evidence, and full execution traces.
         </p>
         <Badge tone="cyan" >v0.1.0</Badge>
       </Card>
