@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Reset ──────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  background: #120D0A;
+  color: #F0E4D8;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2E2018; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #44342A; }
+
+/* ── Panel surface ──────────────────────────────────────── */
+.panel {
+  background: #1C1510;
+  border: 1px solid rgba(255, 219, 187, 0.10);
+  border-top-color: rgba(255, 219, 187, 0.16);
+}
+
+/* ── Graticule grid ─────────────────────────────────────── */
+.graticule {
+  background-image:
+    linear-gradient(rgba(153,126,103,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(153,126,103,0.08) 1px, transparent 1px),
+    linear-gradient(rgba(153,126,103,0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(153,126,103,0.14) 1px, transparent 1px);
+  background-size: 28px 28px, 28px 28px, 140px 140px, 140px 140px;
+}
+
+/* ── Mono data ──────────────────────────────────────────── */
+.data { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+
+/* ── Focus ring ─────────────────────────────────────────── */
+.focus-ring:focus-visible {
+  outline: 2px solid #FFDBBB;
+  outline-offset: 2px;
+}
+
+/* ════════════════════════════════════════════════════════
+   3D TILT CARD EFFECT
+   Uses JS-injected --rx / --ry CSS vars for mouse tracking
+   ════════════════════════════════════════════════════════ */
+.card-3d {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--sc, 1));
+  transform-style: preserve-3d;
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+  will-change: transform;
+  position: relative;
+}
+
+.card-3d:hover {
+  box-shadow:
+    0 24px 48px -8px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,219,187,0.18),
+    0 0 32px -8px rgba(255,219,187,0.12);
+}
+
+/* Gloss shine overlay that follows mouse */
+.card-3d::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255,219,187,0.10) 0%,
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 0;
+}
+
+.card-3d:hover::after {
+  opacity: 1;
+}
+
+/* Glowing animated border sweep on hover */
+.card-3d::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 0%,
+    rgba(255,219,187,0.55) 10%,
+    rgba(204,190,177,0.35) 20%,
+    transparent 35%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: -1;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  padding: 1px;
+}
+
+.card-3d:hover::before {
+  opacity: 1;
+  animation: border-spin 2s linear infinite;
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-spin {
+  to { --angle: 360deg; }
+}
+
+/* Content inside card stays above overlays */
+.card-3d > * { position: relative; z-index: 1; }
+
+/* ════════════════════════════════════════════════════════
+   POP / 3D TEXT HEADING EFFECT
+   Warm earthy layered text-shadow stack
+   ════════════════════════════════════════════════════════ */
+.pop-heading {
+  text-shadow:
+    0px 1px 0px rgba(255,219,187,0.5),
+    0px 2px 0px #997E67,
+    0px 3px 0px #5c4a3a,
+    0px 4px 8px rgba(0,0,0,0.7);
+  letter-spacing: -0.01em;
+}
+
+/* Smaller pop variant for section titles and card headers */
+.pop-heading-sm {
+  text-shadow:
+    0px 1px 0px rgba(255,219,187,0.4),
+    0px 2px 4px rgba(0,0,0,0.6);
+  letter-spacing: 0.02em;
+}
+
+/* ── Animations ─────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.pulse-dot { animation: pulse-dot 1.8s ease-in-out infinite; }
+
+@keyframes sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.sweep-bar { animation: sweep 1.4s ease-in-out infinite; }
+
+/* Card entrance animation */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: perspective(900px) translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) translateY(0) scale(1);
+  }
+}
+.card-enter {
+  animation: card-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot, .sweep-bar, .card-3d, .card-enter { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,119 @@
+/* ════════════════════════════════════════════════════════
+   Card3D Module CSS - High-Performance 3D Transforms
+   ════════════════════════════════════════════════════════ */
+
+.cardContainer {
+  perspective: var(--perspective, 1000px);
+  transform-style: preserve-3d;
+  display: inline-block;
+  width: 100%;
+}
+
+.cardRoot {
+  position: relative;
+  transform: perspective(var(--perspective, 1000px))
+    rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg))
+    scale3d(var(--sc, 1), var(--sc, 1), var(--sc, 1));
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  transition: box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow:
+    var(--sh-x, 0px) var(--sh-y, 8px) var(--sh-blur, 16px) rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 219, 187, 0.08);
+}
+
+.cardRoot:hover {
+  box-shadow:
+    var(--sh-x, 0px) var(--sh-y, 20px) var(--sh-blur, 36px) rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 219, 187, 0.25),
+    0 0 28px -4px rgba(255, 219, 187, 0.12);
+}
+
+/* Specular light sheen following pointer */
+.glareOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 219, 187, 0.18) 0%,
+    rgba(255, 219, 187, 0.05) 30%,
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: 20;
+  mix-blend-mode: overlay;
+}
+
+.cardRoot:hover .glareOverlay {
+  opacity: 1;
+}
+
+/* Dynamic rotating rainbow/amber border highlight on hover */
+.borderSweep {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 0%,
+    rgba(255, 219, 187, 0.6) 8%,
+    rgba(204, 190, 177, 0.35) 18%,
+    transparent 32%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  padding: 1px;
+}
+
+.cardRoot:hover .borderSweep {
+  opacity: 1;
+  animation: borderSweepSpin 2.4s linear infinite;
+}
+
+@keyframes borderSweepSpin {
+  to {
+    --angle: 360deg;
+  }
+}
+
+/* Parallax Depth Layers */
+.layerBg {
+  transform: translateZ(0px);
+}
+
+.layerContent {
+  transform: translateZ(20px) translate3d(var(--px-x, 0px), var(--px-y, 0px), 0);
+  transition: transform 0.1s ease-out;
+}
+
+.layerForeground {
+  transform: translateZ(40px) translate3d(calc(var(--px-x, 0px) * 1.5), calc(var(--px-y, 0px) * 1.5), 0);
+  transition: transform 0.1s ease-out;
+}
+
+/* Reduced Motion Fallback */
+@media (prefers-reduced-motion: reduce) {
+  .cardRoot {
+    transform: none !important;
+    transition: opacity 0.2s ease, box-shadow 0.2s ease !important;
+  }
+  .glareOverlay,
+  .borderSweep {
+    animation: none !important;
+    display: none !important;
+  }
+  .layerContent,
+  .layerForeground {
+    transform: none !important;
+  }
+}

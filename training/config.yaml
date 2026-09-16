@@ -1,0 +1,12 @@
+# SatQuery AI — BigEarthNet Domain Adaptation Config
+bigearthnet_root: "training/data/BigEarthNet-v1.0"
+checkpoint_dir: "models/checkpoints"
+
+batch_size: 16
+learning_rate: 0.001
+epochs: 20
+limit_samples: null   # set to an int to subsample for a quick full-data test
+
+# Smoke-test-only settings (used with --smoke-test, no real dataset needed)
+smoke_test_samples: 32
+smoke_test_epochs: 2
