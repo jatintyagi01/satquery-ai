@@ -31,6 +31,29 @@ class AnalysisRecord(Base):
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
 
+class MissionRecord(Base):
+    __tablename__ = "missions"
+
+    mission_id = Column(String, primary_key=True)
+    objective = Column(Text, nullable=False)
+    mission_type = Column(String, nullable=False)
+    mission_title = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    image_ids_json = Column(Text, nullable=False)
+    tasks_json = Column(Text, nullable=False)
+    visual_outputs_json = Column(Text, nullable=False)
+    primary_finding = Column(Text, nullable=False)
+    executive_summary = Column(Text, nullable=False)
+    key_findings_json = Column(Text, nullable=False)
+    evidence_cards_json = Column(Text, nullable=False)
+    affected_regions_json = Column(Text, nullable=False)
+    statistics_json = Column(Text, nullable=False)
+    limitations_json = Column(Text, nullable=False)
+    missing_input_warning = Column(Text, nullable=True)
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 

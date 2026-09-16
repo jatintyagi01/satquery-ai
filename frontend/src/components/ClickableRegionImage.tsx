@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api } from "../services/api";
 
+import type { RegionFollowupResponse } from "../types";
+
 /** A targeting reticle, not a generic map pin — fits satellite imagery
  * inspection rather than a consumer-maps interaction. */
 function Reticle() {
@@ -21,10 +23,12 @@ export default function ClickableRegionImage({
   src,
   analysisId,
   className = "",
+  onRegionFollowup,
 }: {
   src: string;
   analysisId: string;
   className?: string;
+  onRegionFollowup?: (res: RegionFollowupResponse) => void;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [marker, setMarker] = useState<{ left: number; top: number } | null>(null);
@@ -49,6 +53,9 @@ export default function ClickableRegionImage({
     try {
       const res = await api.regionFollowup(analysisId, naturalX, naturalY);
       setSummary(res.summary);
+      if (onRegionFollowup) {
+        onRegionFollowup(res);
+      }
     } catch {
       setSummary("Could not fetch region details.");
     } finally {

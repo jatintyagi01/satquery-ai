@@ -178,3 +178,58 @@ async def generate_report(analysis_id: str):
     image_meta = []  # image metadata not persisted long-term in this build; report uses response data
     path = report_service.build_report(r, image_meta)
     return FileResponse(path, filename=Path(path).name, media_type="application/pdf")
+
+
+# ---------------------------------------------------------------------------
+# Mission Mode — Autonomous Earth-Observation Investigation
+# ---------------------------------------------------------------------------
+from ..schemas.mission_schemas import (
+    Mission, MissionPlanResponse, StartMissionRequest, MissionSummaryItem
+)
+from ..services import mission_service
+from ..agents.mission_planner import plan_mission
+
+
+@router.post("/missions/plan", response_model=MissionPlanResponse)
+async def api_plan_mission(req: StartMissionRequest):
+    return plan_mission(req.objective, len(req.image_ids))
+
+
+@router.post("/missions/run", response_model=Mission)
+async def api_run_mission(req: StartMissionRequest):
+    images = []
+    for fid in req.image_ids:
+        rec = upload_service.get_image(fid)
+        images.append(rec)
+    return mission_service.run_investigation(req.objective, images, req.session_id)
+
+
+@router.get("/missions", response_model=List[MissionSummaryItem])
+async def api_list_missions(limit: int = 50):
+    return mission_service.list_missions(limit)
+
+
+@router.get("/missions/{mission_id}", response_model=Mission)
+async def api_get_mission(mission_id: str):
+    m = mission_service.get_mission(mission_id)
+    if not m:
+        raise HTTPException(status_code=404, detail="Mission investigation not found")
+    return m
+
+
+@router.delete("/missions/{mission_id}")
+async def api_delete_mission(mission_id: str):
+    ok = mission_service.delete_mission(mission_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Mission not found")
+    return {"deleted": True}
+
+
+@router.post("/missions/{mission_id}/report")
+async def api_mission_report(mission_id: str):
+    m = mission_service.get_mission(mission_id)
+    if not m:
+        raise HTTPException(status_code=404, detail="Mission investigation not found")
+    path = report_service.build_mission_report(m, [])
+    return FileResponse(path, filename=Path(path).name, media_type="application/pdf")
+

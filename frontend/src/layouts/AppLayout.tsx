@@ -1,12 +1,13 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, ScanSearch, GitCompareArrows, History, Radar,
-  Satellite, Activity, ChevronRight,
+  Satellite, Activity, ChevronRight, Compass,
 } from "lucide-react";
 import { Wordmark } from "../components/ui/primitives";
 
 const NAV = [
   { to: "/dashboard",        label: "Dashboard",        icon: LayoutDashboard },
+  { to: "/missions",         label: "Mission Mode",     icon: Compass, highlight: true },
   { to: "/analyze",          label: "Analyze",           icon: ScanSearch },
   { to: "/change-detection", label: "Change Detection",  icon: GitCompareArrows },
   { to: "/optical-sar",      label: "Optical + SAR",     icon: Radar },
@@ -15,6 +16,7 @@ const NAV = [
 
 const PAGE_LABELS: Record<string, string> = {
   "/dashboard":        "Dashboard",
+  "/missions":         "Mission Mode // Autonomous Investigation",
   "/analyze":          "Analysis // Agenti Dispatch",
   "/change-detection": "Change Detection // Pipeline",
   "/optical-sar":      "Optical + SAR // Fusion",

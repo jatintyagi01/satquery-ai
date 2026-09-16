@@ -113,3 +113,117 @@ def build_report(response: AnalyzeResponse, image_meta: list[dict]) -> str:
 
     doc.build(story)
     return str(out_path)
+
+
+def build_mission_report(mission: Any, image_meta: list[dict]) -> str:
+    from ..schemas.mission_schemas import Mission
+    styles = _styles()
+    out_path = REPORTS_DIR / f"SatQueryAI_Mission_{mission.mission_id}.pdf"
+    doc = SimpleDocTemplate(str(out_path), pagesize=A4,
+                             leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm, bottomMargin=16 * mm)
+    story = []
+
+    # Title Banner
+    story.append(Paragraph("🛰️ SatQuery AI — Mission Investigation Report", styles["SatTitle"]))
+    story.append(Paragraph(
+        f"<b>Mission ID:</b> {mission.mission_id} &nbsp;&nbsp;|&nbsp;&nbsp; "
+        f"<b>Type:</b> {mission.mission_title} &nbsp;&nbsp;|&nbsp;&nbsp; "
+        f"<b>Date:</b> {mission.created_at[:10]}",
+        styles["SatBody"]
+    ))
+    story.append(Spacer(1, 8))
+
+    # Objective
+    story.append(Paragraph("Mission Objective", styles["SatSection"]))
+    story.append(Paragraph(f"<i>\"{mission.objective}\"</i>", styles["SatBody"]))
+    story.append(Spacer(1, 4))
+
+    # Executive Summary & Primary Finding
+    story.append(Paragraph("Primary Finding", styles["SatSection"]))
+    story.append(Paragraph(f"<b>{mission.primary_finding}</b>", styles["SatBody"]))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(mission.executive_summary, styles["SatBody"]))
+
+    # Quantitative Statistics Table
+    story.append(Paragraph("Quantitative Investigation Findings", styles["SatSection"]))
+    stats = mission.statistics if isinstance(mission.statistics, dict) else mission.statistics.dict()
+    stat_data = [
+        ["Metric Dimension", "Observed Value", "Proportion of Scene"],
+        ["Total Scene Area Investigated", f"{stats.get('total_scene_area_km2', 0.0):.2f} km²", "100.0%"],
+        ["Total Changed Surface Footprint", f"{stats.get('changed_area_km2', 0.0):.2f} km²", f"{stats.get('changed_area_pct', 0.0):.1f}%"],
+        ["Agricultural Land Impacted", f"{stats.get('agricultural_affected_km2', 0.0):.2f} km²", f"{stats.get('agricultural_affected_pct', 0.0):.1f}%"],
+        ["Water Inundation Expansion", f"{stats.get('water_expansion_km2', 0.0):.2f} km²", "-"],
+        ["New Built-up Surface Conversion", f"{stats.get('built_up_expansion_km2', 0.0):.2f} km²", "-"],
+        ["Vegetation / Tree Canopy Loss", f"{stats.get('vegetation_loss_km2', 0.0):.2f} km²", "-"],
+    ]
+    st = Table(stat_data, colWidths=[65 * mm, 45 * mm, 50 * mm])
+    st.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0B4F6C")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#F8F9FA")),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#B8C9D9")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    story.append(st)
+
+    # Investigation Plan / Tasks
+    story.append(Paragraph("Autonomous Investigation Plan & Task Execution", styles["SatSection"]))
+    task_data = [["Task", "Investigation Step", "Status", "Finding / Output"]]
+    tasks = mission.tasks if isinstance(mission.tasks, list) else []
+    for t in tasks:
+        t_dict = t if isinstance(t, dict) else t.dict()
+        task_data.append([
+            t_dict.get("task_id", ""),
+            t_dict.get("title", ""),
+            t_dict.get("status", "").upper(),
+            t_dict.get("output_summary", "Completed")[:55] + "...",
+        ])
+    tt = Table(task_data, colWidths=[20 * mm, 50 * mm, 25 * mm, 65 * mm])
+    tt.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2B3C")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#B8C9D9")),
+    ]))
+    story.append(tt)
+
+    # Multi-Modal Evidence Cards
+    story.append(Paragraph("Multi-Modal Supporting Evidence", styles["SatSection"]))
+    cards = mission.evidence_cards if isinstance(mission.evidence_cards, list) else []
+    for c in cards:
+        c_dict = c if isinstance(c, dict) else c.dict()
+        story.append(Paragraph(
+            f"<b>[{c_dict.get('category', '').upper()}] {c_dict.get('title', '')}:</b> {c_dict.get('description', '')}",
+            styles["SatBody"]
+        ))
+        story.append(Spacer(1, 2))
+
+    # Visual Evidence
+    if mission.visual_outputs:
+        story.append(Paragraph("Investigation Visual Evidence & Overlays", styles["SatSection"]))
+        for name, url in mission.visual_outputs.items():
+            fname = url.split("/")[-1]
+            fpath = UPLOAD_DIR / fname
+            if fpath.exists():
+                try:
+                    story.append(Paragraph(f"Layer: {name.replace('_', ' ').title()}", styles["SatBody"]))
+                    story.append(RLImage(str(fpath), width=85 * mm, height=55 * mm))
+                    story.append(Spacer(1, 4))
+                except Exception:
+                    pass
+
+    # Limitations & Metadata
+    story.append(Paragraph("Data Limitations & Sensor Telemetry", styles["SatSection"]))
+    for lim in mission.limitations:
+        story.append(Paragraph(f"• {lim}", styles["SatBody"]))
+
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(
+        "Autonomous Mission Report generated by SatQuery AI. Findings derived deterministically from bi-temporal remote sensing observations.",
+        styles["SatBody"]
+    ))
+
+    doc.build(story)
+    return str(out_path)
+

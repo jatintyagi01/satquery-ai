@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import cv2
 from .vision_tools import compute_landcover_stats
+from .spectral_analysis import analyze_spectral_and_biophysical_change
 
 
 def align_shapes(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -19,7 +20,13 @@ def align_shapes(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return a_r, b_r
 
 
-def detect_change(img_t1: np.ndarray, img_t2: np.ndarray, sensitivity: float = 1.0) -> Dict:
+def detect_change(
+    img_t1: np.ndarray,
+    img_t2: np.ndarray,
+    sensitivity: float = 1.0,
+    meta_t1: Optional[Dict] = None,
+    meta_t2: Optional[Dict] = None,
+) -> Dict:
     """sensitivity < 1.0 lowers the effective change threshold (more sensitive,
     used by the orchestrator's self-correction retry loop, Innovation #3);
     sensitivity == 1.0 is the standard Otsu-adaptive threshold."""
@@ -63,6 +70,11 @@ def detect_change(img_t1: np.ndarray, img_t2: np.ndarray, sensitivity: float = 1
     stats_a = compute_landcover_stats(a)
     stats_b = compute_landcover_stats(b)
 
+    # Advanced Spectral & Biophysical Analysis (Global + Per-Region)
+    spectral_analysis = analyze_spectral_and_biophysical_change(
+        a, b, regions=regions, meta_a=meta_t1, meta_b=meta_t2
+    )
+
     # Visualization: change map heat overlay + red-highlighted overlay on "after" image
     heat = cv2.applyColorMap(diff_blur.astype(np.uint8), cv2.COLORMAP_JET)
     heat_rgb = cv2.cvtColor(heat, cv2.COLOR_BGR2RGB)
@@ -92,6 +104,7 @@ def detect_change(img_t1: np.ndarray, img_t2: np.ndarray, sensitivity: float = 1
         "change_pct": change_pct,
         "stats_before": stats_a,
         "stats_after": stats_b,
+        "advanced_change_analysis": spectral_analysis,
     }
 
 

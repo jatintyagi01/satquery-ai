@@ -154,15 +154,24 @@ export default function DashboardPage() {
             An agentic vision-language assistant for multimodal remote-sensing intelligence — optical, SAR,
             multispectral, and multitemporal imagery, one natural-language query at a time.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
-              onClick={() => navigate("/analyze")}
-              className="inline-flex items-center gap-2 rounded-[5px] px-5 py-2.5 text-[14px] font-semibold transition-all"
+              onClick={() => navigate("/missions")}
+              className="inline-flex items-center gap-2 rounded-[5px] px-5 py-2.5 text-[14px] font-semibold transition-all shadow-glow"
               style={{ background: C.primary, color: "#1A1410" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F5CFA8"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = C.primary; }}
             >
-              <Zap size={15} /> Start Analysis
+              <Zap size={15} /> 🛰️ Mission Mode Investigation
+            </button>
+            <button
+              onClick={() => navigate("/analyze")}
+              className="inline-flex items-center gap-2 rounded-[5px] px-4 py-2.5 text-[14px] font-semibold border transition-all"
+              style={{ background: "transparent", color: C.second, borderColor: C.border }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.third; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}
+            >
+              Query &amp; Analyze
             </button>
           </div>
         </div>
@@ -235,21 +244,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-3">
-                    {/* mini confidence bar */}
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex gap-[2px]">
-                        {Array.from({ length: 5 }).map((_, i) => {
-                          const filled = i < Math.round((r.confidence ?? 0) * 5);
-                          return (
-                            <div key={i} className="w-3 h-1.5 rounded-[1px]"
-                                 style={{ background: filled ? C.primary : C.border }} />
-                          );
-                        })}
-                      </div>
-                      <span className="font-mono text-[11px]" style={{ color: C.primary }}>
-                        {r.confidence != null ? `${Math.round(r.confidence * 100)}%` : "n/a"}
-                      </span>
-                    </div>
                     <span className="text-[10px] font-mono border px-2 py-0.5 rounded transition-colors"
                           style={{ borderColor: C.border, color: C.third }}>
                       Inspect
