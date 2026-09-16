@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Download, CheckCircle2, AlertCircle, Sparkles, RefreshCw, Workflow, MessageSquarePlus } from "lucide-react";
 import type { AnalyzeResponse } from "../types";
-import { Card, PanelTitle, Badge, SignalMeter, SecondaryButton } from "./ui/primitives";
+import { Card, PanelTitle, Badge, SecondaryButton } from "./ui/primitives";
 import ClickableRegionImage from "./ClickableRegionImage";
 import { api } from "../services/api";
 import { humanizeIdentifier } from "../utils/format";
@@ -182,8 +182,7 @@ export default function ResultsPanel({
 
       {result.retries.length > 0 && (
         <div className="flex items-center gap-2 text-[12px] text-accent-teal bg-accent-teal/10 border border-accent-teal/25 rounded-md px-3 py-2">
-          <RefreshCw size={13} /> The agent self-corrected: initial confidence was low, so it automatically
-          retried with adjusted detection parameters ({result.retries.map(r => `${(r.confidence ?? 0) * 100 | 0}%`).join(" → ")}).
+          <RefreshCw size={13} /> The agent self-corrected: automatically retried with adjusted detection parameters.
         </div>
       )}
 
@@ -201,10 +200,6 @@ export default function ResultsPanel({
                 </Badge>
               )}
             </div>
-          </div>
-          <div className="flex flex-col items-center gap-1 shrink-0">
-            <SignalMeter value={result.confidence} />
-            <span className="text-[11px] data text-slate-400">{result.confidence_label}</span>
           </div>
         </div>
       </Card>
@@ -224,7 +219,6 @@ export default function ResultsPanel({
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge tone="blue">{cs.task_display}</Badge>
-                  {cs.confidence != null && <span className="text-[11px] data text-slate-500">{Math.round(cs.confidence * 100)}%</span>}
                 </div>
                 <p className="text-[13px] text-slate-500 mt-1 italic">"{cs.query}"</p>
                 <p className="text-sm text-slate-200 mt-1">{cs.answer}</p>
@@ -259,7 +253,7 @@ export default function ResultsPanel({
               </div>
             )}
           </div>
-          <p className="text-[11px] text-[#997E67] font-mono mt-2">Region outlines are color-coded by confidence: green = high, amber = moderate, red = low.</p>
+          <p className="text-[11px] text-[#997E67] font-mono mt-2">Region outlines identify grounded change detections.</p>
           <TemporalAnalyticsCharts />
         </Card>
       )}
@@ -303,7 +297,7 @@ export default function ResultsPanel({
             {v.grounding_overlay && (
               <div>
                 <div className="text-[11px] text-slate-500 mb-1">
-                  Grounded region <span className="text-slate-600">(click a box for confidence detail)</span>
+                  Grounded region <span className="text-slate-600">(click a box for details)</span>
                 </div>
                 <ClickableRegionImage
                   src={v.grounding_overlay} analysisId={result.analysis_id}

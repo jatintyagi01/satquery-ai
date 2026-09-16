@@ -238,9 +238,6 @@ export default function HistoryPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono text-[13px] font-bold" style={{ color: C.primary }}>
-                          {it.confidence != null ? `${Math.round(it.confidence * 100)}%` : "n/a"}
-                        </span>
                         <button
                           onClick={(e) => deleteItem(it.analysis_id, e)}
                           className="transition-colors"
